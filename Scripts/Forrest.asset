@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da2b49539fdc7a14c8295cb9283529e3, type: 3}
+  m_Name: Forrest
+  m_EditorClassIdentifier: 
+  biomeName: Forrest
+  biomeColor: {r: 0.09131362, g: 0.33962262, b: 0.09131362, a: 1}
+  foliageDensity: 86.6
+  temperatureRange: {x: -32, y: 26.666668}
+  humidityRange: {x: 20, y: 80}
