@@ -1,5 +1,5 @@
-using UnityEditor;
 using UnityEngine;
+using UnityEditor;
 
 [CustomEditor(typeof(ChunkGenerator))]
 public class ChunkGeneratorEditor : Editor
@@ -12,7 +12,16 @@ public class ChunkGeneratorEditor : Editor
 
         if (GUILayout.Button("Regenerate Chunks & Climate"))
         {
-            generator.RegenerateChunks();
+            // Preferably, call the WorldGenerator to update both chunks and climate.
+            WorldGenerator wg = FindObjectOfType<WorldGenerator>();
+            if (wg != null)
+            {
+                wg.RegenerateWorld();
+            }
+            else
+            {
+                generator.RegenerateChunks();
+            }
         }
     }
 }

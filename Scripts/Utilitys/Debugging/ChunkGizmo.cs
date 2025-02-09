@@ -3,17 +3,22 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
+[ExecuteAlways]
 public class ChunkGizmo : MonoBehaviour
 {
     private ChunkGenerator chunkGenerator;
 
-    private void Awake()
+    private void OnEnable()
     {
+        // Cache reference to ChunkGenerator.
         chunkGenerator = FindObjectOfType<ChunkGenerator>();
     }
 
     private void OnDrawGizmos()
     {
+        if (chunkGenerator == null)
+            chunkGenerator = FindObjectOfType<ChunkGenerator>();
+
         if (chunkGenerator == null || chunkGenerator.GetChunks().Count == 0)
         {
             Debugging.LogWarning("🔍 No chunks available, skipping Gizmos.");
@@ -31,17 +36,17 @@ public class ChunkGizmo : MonoBehaviour
             }
 
             if (Debugging.ShowChunkNames)
-            {
                 DrawChunkName(chunk.ChunkName, center);
-            }
         }
     }
 
     private void DrawChunkOutline(Vector3 position, float size)
     {
         Vector3[] points = {
-            position, position + new Vector3(size, 0, 0),
-            position + new Vector3(size, 0, size), position + new Vector3(0, 0, size)
+            position,
+            position + new Vector3(size, 0, 0),
+            position + new Vector3(size, 0, size),
+            position + new Vector3(0, 0, size)
         };
 
         for (int i = 0; i < points.Length; i++)

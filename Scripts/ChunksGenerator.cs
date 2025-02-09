@@ -2,16 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[ExecuteAlways]
 public class ChunkGenerator : MonoBehaviour
 {
     [Header("World Settings")]
     [SerializeField] private int worldSizeInChunks = 5;
     [SerializeField] private float chunkSize = 10f;
+    
+    // New field to control how many chunks are generated per frame.
+    [SerializeField] private int chunksPerFrame = 10;
+
+    // Expose the total number of chunks along one axis.
+    public int WorldSizeInChunks => worldSizeInChunks;
+
+    // Public property to allow others to check if generation is still in progress.
+    public bool IsGenerating => isGenerating;
 
     private Transform chunksParent;
     private bool isGenerating = false;
-    private HashSet<ChunkData> chunkList = new HashSet<ChunkData>();
-    private int worldSeed = 0; // 🌱 Stores the seed
+    private readonly HashSet<ChunkData> chunkList = new HashSet<ChunkData>();
 
     private WorldGenerator worldGenerator;
 
@@ -20,41 +29,38 @@ public class ChunkGenerator : MonoBehaviour
         worldGenerator = FindObjectOfType<WorldGenerator>();
     }
 
-    public void SetWorldSeed(int seed)
-    {
-        worldSeed = seed;
-        Random.InitState(worldSeed); // 🌍 Apply the seed for deterministic chunk generation
-    }
-
-    private void Start()
-    {
-        Debugging.LogOperation("🚀 Starting chunk generation...");
-        StartCoroutine(GenerateChunks());
-    }
-
+    /// <summary>
+    /// Regenerates all chunks.
+    /// Uses a coroutine in Play mode (with a yield every [chunksPerFrame] chunks) 
+    /// and synchronous generation in Editor mode.
+    /// </summary>
     public void RegenerateChunks()
     {
         if (isGenerating)
         {
-            Debugging.LogWarning("⚠️ Chunk regeneration skipped: Generation already in progress.");
+            Debug.LogWarning("⚠️ Chunk generation already in progress.");
             return;
         }
-
-        Debugging.LogOperation("🔄 Regenerating Chunks...");
         ClearWorldData();
-        StartCoroutine(GenerateChunks());
+
+        if (Application.isPlaying)
+        {
+            StartCoroutine(GenerateChunksCoroutine());
+        }
+        else
+        {
+            GenerateChunksImmediate();
+        }
     }
 
-    public IEnumerator GenerateChunks()
+    /// <summary>
+    /// Generates chunks using a coroutine (Play mode).
+    /// Generates a specified number of chunks per frame to spread out the workload.
+    /// </summary>
+    private IEnumerator GenerateChunksCoroutine()
     {
-        if (isGenerating)
-        {
-            Debugging.LogWarning("⚠️ Chunk generation already in progress. Skipping...");
-            yield break;
-        }
-
         isGenerating = true;
-        Debugging.LogOperation($"🟢 Generating chunks with seed: {worldSeed}...");
+        Debug.Log("🟢 Generating chunks...");
 
         chunkList.Clear();
         if (chunksParent != null)
@@ -62,10 +68,51 @@ public class ChunkGenerator : MonoBehaviour
             DestroyImmediate(chunksParent.gameObject);
             chunksParent = null;
         }
-
         chunksParent = new GameObject("Chunks").transform;
 
-        Random.InitState(worldSeed); // 🌱 Apply seed before chunk placement
+        int halfSize = worldSizeInChunks / 2;
+        int counter = 0;
+        for (int x = -halfSize; x <= halfSize; x++)
+        {
+            for (int z = -halfSize; z <= halfSize; z++)
+            {
+                // Create a new chunk.
+                ChunkData newChunk = new ChunkData(x, z, chunkSize);
+                chunkList.Add(newChunk);
+
+                // Create a GameObject for visualization.
+                GameObject chunkObject = new GameObject(newChunk.ChunkName);
+                chunkObject.transform.position = newChunk.ChunkPosition;
+                chunkObject.transform.SetParent(chunksParent);
+
+                counter++;
+                // Yield after generating chunksPerFrame chunks.
+                if (counter >= chunksPerFrame)
+                {
+                    counter = 0;
+                    yield return null;
+                }
+            }
+        }
+        isGenerating = false;
+    }
+
+    /// <summary>
+    /// Synchronously generates chunks (Editor mode).
+    /// </summary>
+    private void GenerateChunksImmediate()
+    {
+        isGenerating = true;
+        Debug.Log("🟢 Generating chunks immediately (Editor mode)...");
+
+        chunkList.Clear();
+        if (chunksParent != null)
+        {
+            DestroyImmediate(chunksParent.gameObject);
+            chunksParent = null;
+        }
+        chunksParent = new GameObject("Chunks").transform;
+
         int halfSize = worldSizeInChunks / 2;
         for (int x = -halfSize; x <= halfSize; x++)
         {
@@ -74,46 +121,32 @@ public class ChunkGenerator : MonoBehaviour
                 ChunkData newChunk = new ChunkData(x, z, chunkSize);
                 chunkList.Add(newChunk);
 
-                UnityThreadDispatcher.RunOnMainThread(() =>
-                {
-                    GameObject chunkObject = new GameObject(newChunk.ChunkName);
-                    chunkObject.transform.position = newChunk.ChunkPosition;
-                    chunkObject.transform.SetParent(chunksParent);
-                });
-
-                yield return null;
+                GameObject chunkObject = new GameObject(newChunk.ChunkName);
+                chunkObject.transform.position = newChunk.ChunkPosition;
+                chunkObject.transform.SetParent(chunksParent);
             }
         }
-
         isGenerating = false;
-
-        if (worldGenerator != null)
-        {
-            worldGenerator.GenerateClimateData();
-        }
     }
 
-    public float GetChunkSize()
-{
-    return chunkSize;
-}
+    public float GetChunkSize() => chunkSize;
 
-
+    /// <summary>
+    /// Clears all generated chunk GameObjects and data.
+    /// </summary>
     public void ClearWorldData()
     {
-        Debugging.LogOperation("🗑️ Clearing old world data...");
-
+        Debug.Log("🗑️ Clearing old world data...");
         if (chunksParent != null)
         {
             DestroyImmediate(chunksParent.gameObject);
             chunksParent = null;
         }
-
         chunkList.Clear();
     }
 
-    public HashSet<ChunkData> GetChunks()
-    {
-        return chunkList ?? new HashSet<ChunkData>();
-    }
+    /// <summary>
+    /// Returns the set of all chunks.
+    /// </summary>
+    public HashSet<ChunkData> GetChunks() => chunkList;
 }

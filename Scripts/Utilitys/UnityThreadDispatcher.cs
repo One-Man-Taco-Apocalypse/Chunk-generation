@@ -2,6 +2,9 @@ using System;
 using System.Collections.Concurrent;
 using UnityEngine;
 
+/// <summary>
+/// Utility to dispatch actions on the Unity main thread.
+/// </summary>
 public class UnityThreadDispatcher : MonoBehaviour
 {
     private static UnityThreadDispatcher instance;
@@ -16,7 +19,7 @@ public class UnityThreadDispatcher : MonoBehaviour
         }
         else
         {
-            Destroy(gameObject); // Ensures only one instance exists
+            Destroy(gameObject);
         }
     }
 
@@ -28,11 +31,12 @@ public class UnityThreadDispatcher : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Enqueues an action to be executed on the main thread.
+    /// </summary>
     public static void RunOnMainThread(Action action)
     {
         if (action != null)
-        {
             actions.Enqueue(action);
-        }
     }
 }
